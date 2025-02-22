@@ -11,10 +11,10 @@ This tool allows users to join audio rooms and practice a language.
 ## Installation & Setup
 
 ### 1️ Clone the Repository
-    ```
-    git clone https://github.com/your-repo/WhisperLink.git
-    cd WhisperLink
-    ```
+```
+git clone https://github.com/your-repo/WhisperLink.git
+cd WhisperLink
+```
 
 ### 2 Backend
 
