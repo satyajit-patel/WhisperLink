@@ -32,7 +32,7 @@ cd backend
 npm install
 node server.js
 ```
-# Frontend
+### 3 Frontend
 ```
 cd frontend
 npm install
