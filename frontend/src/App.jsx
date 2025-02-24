@@ -1,147 +1,105 @@
-// frontend/App.jsx
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import axios from "axios";
 
 const App = () => {
-  const [isListening, setIsListening] = useState(false);
+  const [status, setStatus] = useState("idle"); // idle, listening, processing, speaking
   const [correction, setCorrection] = useState("");
   const [userTranscript, setUserTranscript] = useState("");
-  const [isSpeaking, setIsSpeaking] = useState(false);
   const [error, setError] = useState("");
-  const [isProcessing, setIsProcessing] = useState(false);
-
-  // Initialize speech recognition
   const [recognition, setRecognition] = useState(null);
+
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-      if (SpeechRecognition) {
+    try {
+      if (typeof window !== "undefined") {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SpeechRecognition) {
+          setError("Speech recognition is not supported in this browser.");
+          return;
+        }
+
         const recognizer = new SpeechRecognition();
         recognizer.continuous = false;
         recognizer.interimResults = false;
         recognizer.lang = "en-US";
 
         recognizer.onresult = async (event) => {
-          const transcript = event.results[0][0].transcript;
-          setUserTranscript(transcript);
-          setIsProcessing(true);
           try {
-            const response = await axios.post("http://localhost:5000/check-grammar", {
-              transcript
-            });
+            const finalTranscript = event.results[0][0].transcript.trim();
+            if (!finalTranscript) return;
+            
+            setUserTranscript(finalTranscript);
+            setStatus("processing");
+            recognizer.stop();
+            
+            const response = await axios.post("http://localhost:5000/api/v1/check-grammar", { transcript: finalTranscript });
             setCorrection(response.data.correction);
             speak(response.data.correction);
           } catch (err) {
-            setError("Error processing your speech. Please try again.");
+            setError("Error processing speech. Please try again.");
+            setStatus("idle");
           }
-          setIsProcessing(false);
         };
 
-        recognizer.onerror = (event) => {
-          setError("Speech recognition error. Please allow microphone access.");
-          setIsListening(false);
+        recognizer.onerror = () => {
+          setError("Microphone access is required.");
+          setStatus("idle");
+        };
+
+        recognizer.onend = () => {
+          if (status === "listening") setStatus("idle");
         };
 
         setRecognition(recognizer);
-      } else {
-        setError("Speech recognition not supported in this browser.");
       }
+    } catch (err) {
+      setError("Unexpected error occurred.");
     }
   }, []);
 
-  const toggleListening = () => {
-    if (isListening) {
-      recognition?.stop();
-    } else {
+  const startListening = () => {
+    try {
       setError("");
       setUserTranscript("");
       setCorrection("");
       recognition?.start();
+      setStatus("listening");
+    } catch (err) {
+      setError("Failed to start listening. Please try again.");
     }
-    setIsListening(!isListening);
   };
 
   const speak = (text) => {
-    const synth = window.speechSynthesis;
-    const utterance = new SpeechSynthesisUtterance(text);
-    
-    utterance.onstart = () => setIsSpeaking(true);
-    utterance.onend = () => setIsSpeaking(false);
-    
-    synth.speak(utterance);
+    try {
+      const synth = window.speechSynthesis;
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.onstart = () => setStatus("speaking");
+      utterance.onend = () => setStatus("idle");
+      synth.speak(utterance);
+    } catch (err) {
+      setError("Speech synthesis failed.");
+      setStatus("idle");
+    }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-indigo-900 to-indigo-600 flex flex-col items-center justify-center p-4">
-      <div className="w-full max-w-2xl bg-white/10 backdrop-blur-lg rounded-2xl p-8 shadow-xl">
-        <h1 className="text-4xl font-bold text-center mb-8 text-white">
-          AI Language Tutor
-        </h1>
-
-        {/* Animated Bot Avatar */}
-        <div className="flex justify-center mb-8">
-          <motion.div
-            animate={isSpeaking ? { scale: [1, 1.1, 1] } : { scale: 1 }}
-            transition={{ repeat: Infinity, duration: 0.8 }}
-          >
-            <div className="w-32 h-32 bg-indigo-300 rounded-full flex items-center justify-center">
-              <span className="text-6xl">🤖</span>
-            </div>
+    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-900 text-white p-6">
+      <div className="max-w-lg w-full bg-gray-800 rounded-xl p-6 shadow-lg">
+        <h1 className="text-3xl font-bold text-center text-yellow-400 mb-6">Talk with Tom</h1>
+        <div className="flex justify-center mb-6">
+          <motion.div animate={status === "speaking" ? { scale: [1, 1.05, 1] } : { scale: 1 }} transition={{ duration: 0.8, repeat: Infinity }}>
+            <img src="https://img.utdstc.com/icon/4fe/364/4fe364010eac6425d014a0be998e2f762ac10ad3da7fd1835986a6217eb20895:200" alt="Talking Tom" className="w-32 h-32 rounded-full border-4 border-yellow-400" />
           </motion.div>
         </div>
-
-        {/* Conversation Interface */}
-        <div className="space-y-6 mb-8">
-          {userTranscript && (
-            <div className="animate-fade-in">
-              <p className="text-sm text-indigo-200 mb-1">You said:</p>
-              <div className="bg-white/5 p-4 rounded-lg border border-white/10">
-                <p className="text-white">{userTranscript}</p>
-              </div>
-            </div>
-          )}
-
-          {correction && (
-            <div className="animate-fade-in">
-              <p className="text-sm text-indigo-200 mb-1">Correction:</p>
-              <div className="bg-green-500/10 p-4 rounded-lg border border-green-500/20">
-                <p className="text-green-200">{correction}</p>
-              </div>
-            </div>
-          )}
-
-          {isProcessing && (
-            <div className="flex justify-center items-center space-x-2 text-indigo-200">
-              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-              <span>Processing...</span>
-            </div>
-          )}
-
-          {error && (
-            <div className="text-red-300 bg-red-900/20 p-3 rounded-lg">
-              ⚠️ {error}
-            </div>
-          )}
+        <div className="space-y-4">
+          {userTranscript && <p className="p-3 bg-gray-700 rounded-lg">You: {userTranscript}</p>}
+          {correction && <p className="p-3 bg-yellow-600 rounded-lg">Tom: {correction}</p>}
+          {error && <p className="text-red-400 text-center">⚠️ {error}</p>}
         </div>
-
-        {/* Control Button */}
-        <button
-          onClick={toggleListening}
-          disabled={isProcessing}
-          className={`w-full py-4 rounded-xl font-semibold transition-all ${
-            isListening 
-              ? "bg-red-500 hover:bg-red-600 text-white"
-              : "bg-white/90 hover:bg-white text-indigo-600"
-          } ${isProcessing && "opacity-50 cursor-not-allowed"}`}
-        >
-          {isListening ? "Stop Speaking" : "Start Speaking"}
+        <button onClick={startListening} disabled={status !== "idle"} className="mt-6 w-full py-3 bg-yellow-400 text-gray-900 font-bold rounded-lg hover:bg-yellow-500 disabled:bg-gray-600">
+          {status === "listening" ? "Listening..." : "Start Conversation"}
         </button>
       </div>
-
-      <p className="mt-8 text-center text-white/60">
-        Speak naturally and get instant grammar corrections from AI
-      </p>
     </div>
   );
 };
