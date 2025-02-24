@@ -9,15 +9,36 @@ app.use(express.json());
 
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
-app.post("/api/v1//check-grammar", async (req, res) => {
-  console.log("Hello.. you are here")
+app.post("/api/v1/check-grammar", async (req, res) => {
   try {
     const { transcript } = req.body;
     if (!transcript) return res.status(400).json({ correction: "No input detected." });
 
     const chatCompletion = await groq.chat.completions.create({
       messages: [
-        { role: "system", content: "You are a friendly English tutor. Correct grammar and respond as 'You mean: [correct sentence]'. If perfect, say 'Perfect! 🎉 Great job!'." },
+        {
+          role: "system",
+          content: `You are an English tutor. Follow these strict rules:
+          1. For incorrect sentences:
+             - Respond EXACTLY: "You mean: [CORRECTED_SENTENCE]" 
+             - Never use quotes around the correction
+             - No punctuation after correction except normal sentence punctuation
+          2. For perfect sentences:
+             - Respond EXACTLY: "Perfect!"
+          3. Never:
+             - Add explanations
+             - Use special characters
+             - Add line breaks
+             - Use markdown formatting
+             
+          Example corrections:
+          Input: "I goes to school"
+          Output: "You mean, I go to school"
+          
+          Input: "She eats an apple"
+          Output: "Perfect!"
+          `
+        },
         { role: "user", content: transcript }
       ],
       model: "mixtral-8x7b-32768",
