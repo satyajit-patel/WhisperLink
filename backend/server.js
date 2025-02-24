@@ -18,31 +18,12 @@ app.post("/api/v1/check-grammar", async (req, res) => {
       messages: [
         {
           role: "system",
-          content: `You are an English tutor. Follow these strict rules:
-          1. For incorrect sentences:
-             - Respond EXACTLY: "You mean: [CORRECTED_SENTENCE]" 
-             - Never use quotes around the correction
-             - No punctuation after correction except normal sentence punctuation
-          2. For perfect sentences:
-             - Respond EXACTLY: "Perfect!"
-          3. Never:
-             - Add explanations
-             - Use special characters
-             - Add line breaks
-             - Use markdown formatting
-             
-          Example corrections:
-          Input: "I goes to school"
-          Output: "You mean, I go to school"
-          
-          Input: "She eats an apple"
-          Output: "Perfect!"
-          `
+          content: "You are an expert English teacher. Correct any grammatical errors in the user's text while maintaining their original meaning. Provide only the corrected version without explanations."
         },
         { role: "user", content: transcript }
       ],
       model: "mixtral-8x7b-32768",
-      temperature: 0.3,
+      temperature: 0.2,
       max_tokens: 100
     });
 

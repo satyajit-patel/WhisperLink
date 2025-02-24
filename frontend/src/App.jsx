@@ -1,13 +1,16 @@
 import React, { useState, useEffect } from "react";
-import { motion } from "framer-motion";
 import axios from "axios";
+import { SparklesPreview } from "./components/Sparkles/SparklesPreview";
 
 const App = () => {
-  const [status, setStatus] = useState("idle"); // idle, listening, processing, speaking
+  const [status, setStatus] = useState("idle");
   const [correction, setCorrection] = useState("");
   const [userTranscript, setUserTranscript] = useState("");
   const [error, setError] = useState("");
   const [recognition, setRecognition] = useState(null);
+  
+  const staticImage = "https://img.utdstc.com/icon/4fe/364/4fe364010eac6425d014a0be998e2f762ac10ad3da7fd1835986a6217eb20895:200";
+  const speakingGif = "https://media0.giphy.com/media/v1.Y2lkPTc5MGI3NjExbzY2Zmh2YjA1bXIxaWhmcnF5NjNuajJ5anB6b3JjcHp5dWN5ajBhMSZlcD12MV9pbnRlcm5naWZfYnlfaWQmY3Q9Zw/2kS6e8RFoWbcs/giphy.gif";
 
   useEffect(() => {
     try {
@@ -32,7 +35,7 @@ const App = () => {
             setStatus("processing");
             recognizer.stop();
             
-            const response = await axios.post("http://localhost:5000/api/v1/check-grammar", { transcript: finalTranscript });
+            const response = await axios.post("/api/v1/check-grammar", { transcript: finalTranscript });
             setCorrection(response.data.correction);
             speak(response.data.correction);
           } catch (err) {
@@ -83,24 +86,36 @@ const App = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-900 text-white p-6">
-      <div className="max-w-lg w-full bg-gray-800 rounded-xl p-6 shadow-lg">
-        <h1 className="text-3xl font-bold text-center text-yellow-400 mb-6">Talk with Tom</h1>
-        <div className="flex justify-center mb-6">
-          <motion.div animate={status === "speaking" ? { scale: [1, 1.05, 1] } : { scale: 1 }} transition={{ duration: 0.8, repeat: Infinity }}>
-            <img src="https://img.utdstc.com/icon/4fe/364/4fe364010eac6425d014a0be998e2f762ac10ad3da7fd1835986a6217eb20895:200" alt="Talking Tom" className="w-32 h-32 rounded-full border-4 border-yellow-400" />
-          </motion.div>
-        </div>
-        <div className="space-y-4">
-          {userTranscript && <p className="p-3 bg-gray-700 rounded-lg">You: {userTranscript}</p>}
-          {correction && <p className="p-3 bg-yellow-600 rounded-lg">Tom: {correction}</p>}
-          {error && <p className="text-red-400 text-center">⚠️ {error}</p>}
-        </div>
-        <button onClick={startListening} disabled={status !== "idle"} className="mt-6 w-full py-3 bg-yellow-400 text-gray-900 font-bold rounded-lg hover:bg-yellow-500 disabled:bg-gray-600">
-          {status === "listening" ? "Listening..." : "Start Conversation"}
-        </button>
+    <div className="h-screen bg-black">
+      <div className="h-50">
+        <SparklesPreview />
       </div>
+
+      <div className="flex justify-center">
+        <div className="max-w-lg w-full bg-gray-800 rounded-xl p-6 shadow-2xl border border-yellow-400">
+            <h2 className="font-extrabold text-center text-yellow-400 mb-6">Talk with Tom</h2>
+            <div className="flex justify-center mb-6">
+              <img 
+                src={status === "speaking" ? speakingGif : staticImage}
+                alt="Talking Tom" 
+                className="w-40 h-40 rounded-full border-4 border-yellow-400 shadow-lg" />
+            </div>
+            <div className="space-y-4">
+              {userTranscript && <p className="p-3 bg-gray-700 rounded-lg">You: {userTranscript}</p>}
+              {correction && <p className="p-3 bg-gray-700 rounded-lg">Tom: {correction}</p>}
+              {error && <p className="text-red-400 text-center">⚠️ {error}</p>}
+            </div>
+            <button 
+              onClick={startListening} 
+              disabled={status !== "idle"} 
+              className="mt-6 w-full py-3 bg-yellow-400 text-gray-900 font-bold rounded-lg hover:bg-yellow-500 disabled:bg-gray-600 shadow-lg">
+              {status === "listening" ? "Listening..." : "Start Conversation"}
+            </button>
+          </div>
+      </div>
+
     </div>
+    
   );
 };
 
