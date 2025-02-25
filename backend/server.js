@@ -15,19 +15,24 @@ app.post("/api/v1/check-grammar", async (req, res) => {
     if (!transcript) return res.status(400).json({ correction: "No input detected." });
 
     const chatCompletion = await groq.chat.completions.create({
-      messages: [
+      "messages": [
         {
-          role: "system",
-          content: "You are an expert English teacher. Correct any grammatical errors in the user's text while maintaining their original meaning. Provide only the corrected version without explanations."
+          "role": "system",
+          "content": `You are an expert English teacher. When the user provides a sentence, check its grammatical correctness while ignoring capitalization, punctuation, and minor stylistic choices. If the sentence is correct, respond with "Your sentence is correct." If there are errors, provide only the corrected version without explanations. Be concise and quick.`
         },
-        { role: "user", content: transcript }
+        { 
+          "role": "user", 
+          "content": `Tell me if this sentence is grammatically correct: "${transcript}"` 
+        }
       ],
-      model: "mixtral-8x7b-32768",
-      temperature: 0.2,
-      max_tokens: 100
+      "model": "mixtral-8x7b-32768",
+      "temperature": 0.05,
+      "max_completion_tokens": 1040,
+      "top_p": 1,
+      "stream": false
     });
 
-    const correction = chatCompletion.choices[0]?.message?.content?.trim() || "Could you repeat that?";
+    const correction = chatCompletion.choices[0]?.message?.content?.trim() || "Could you repeat again?";
     res.json({ correction });
   } catch (error) {
     console.error("Error processing request:", error);
