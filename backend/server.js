@@ -5,6 +5,7 @@ require("dotenv").config();
 
 const app = express();
 app.use(cors());
+app.use(express.static("dist")); // to serve dist file
 app.use(express.json());
 
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
@@ -39,10 +40,6 @@ app.post("/api/v1/check-grammar", async (req, res) => {
     res.status(500).json({ correction: "Oops! Something went wrong. Try again." });
   }
 });
-
-app.use("/ping", (req, res) => {
-  res.send("pong");
-})
 
 const PORT = process.env.PORT;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
