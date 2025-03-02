@@ -17,14 +17,14 @@ app.post("/api/v1/check-grammar", async (req, res) => {
 
     const chatCompletion = await groq.chat.completions.create({
       "messages": [
-        {
-          "role": "system",
-          "content": `You are an expert English teacher. When the user provides a sentence, check its grammatical correctness while ignoring capitalization, punctuation, and minor stylistic choices. If the sentence is correct, respond with "Your sentence is correct." If there are errors, provide only the corrected version without explanations. Be concise and quick.`
-        },
-        { 
-          "role": "user", 
-          "content": `Tell me if this sentence is grammatically correct: "${transcript}"` 
-        }
+          {
+              "role": "system",
+              "content": `You are an expert English teacher. First, check if the user's sentence contains abusive language (e.g., 'fuck', 'shit', racial slurs). If detected, respond ONLY with 'I can't respond to this sentence.' Otherwise, check grammatical correctness while ignoring capitalization, punctuation, and minor stylistic choices. If correct, respond with 'Your sentence is correct.' If errors exist, provide ONLY the corrected version. Never explain your responses.`
+          },
+          { 
+              "role": "user", 
+              "content": `Tell me if this sentence is grammatically correct: \"${transcript}\"`
+          }
       ],
       "model": "mixtral-8x7b-32768",
       "temperature": 0.05,
